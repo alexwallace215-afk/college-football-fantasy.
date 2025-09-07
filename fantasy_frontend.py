@@ -34,7 +34,7 @@ pos_colors = {
     'DEF':'#FFB6C1'   # Light Pink
 }
 
-# Fantasy lineup structure
+# Fantasy lineup structure (slots per position)
 lineup = {
     "QB": 1,
     "RB": 2,
@@ -48,35 +48,6 @@ st.markdown("## 🏈 College Football Fantasy Matchup")
 
 # Loop through each position slot
 for pos, count in lineup.items():
-    for i in range(1, count + 1):
-        cols = st.columns([4, 2, 4])  # Team1 | Slot | Team2
-
-        with cols[0]:
-            player1 = st.selectbox(
-                f"Team 1 {pos}{i}",
-                options=team1_df[team1_df['position'] == pos]['Player'].tolist(),
-                key=f"team1_{pos}{i}"
-            )
-            if player1:
-                row = team1_df[team1_df['Player'] == player1].iloc[0]
-                st.markdown(f"**{player1}** — {row['Fantasy Points']} pts  \n[Roster Link]({row['Roster URL']})")
-
-        with cols[1]:
-            color = pos_colors.get(pos, '#FFFFFF')
-            st.markdown(f"""
-            <div style="text-align:center; background-color:{color}; padding:10px; 
-                        border-radius:8px; font-weight:bold; margin:5px;">
-                {pos}{i}
-            </div>
-            """, unsafe_allow_html=True)
-
-        with cols[2]:
-            player2 = st.selectbox(
-                f"Team 2 {pos}{i}",
-                options=team2_df[team2_df['position'] == pos]['Player'].tolist(),
-                key=f"team2_{pos}{i}"
-            )
-            if player2:
-                row = team2_df[team2_df['Player'] == player2].iloc[0]
-                st.markdown(f"**{player2}** — {row['Fantasy Points']} pts  \n[Roster Link]({row['Roster URL']})")
+    for _ in range(count):  # no numbering, just repeat RB twice, WR twice, etc.
+       
 
