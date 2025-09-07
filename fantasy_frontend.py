@@ -1,9 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-# -----------------------
-# 1. Load scoreboard CSV
-# -----------------------
+# Load scoreboard CSV
 scoreboard = pd.read_csv("fantasy_scoreboard.csv")
 
 # Extract teams
@@ -15,21 +13,18 @@ if len(teams) != 2:
     st.stop()
 
 team1, team2 = teams
+
 team1_df = scoreboard[scoreboard['team'] == team1].copy()
 team2_df = scoreboard[scoreboard['team'] == team2].copy()
 
-# -----------------------
-# 2. Extract position for color mapping
-# -----------------------
+# Extract position for filtering
 def get_position(slot):
     return ''.join([c for c in slot.split()[1] if not c.isdigit()])
 
 team1_df['position'] = team1_df['Slot'].apply(get_position)
 team2_df['position'] = team2_df['Slot'].apply(get_position)
 
-# -----------------------
-# 3. Define color mapping
-# -----------------------
+# Color mapping
 pos_colors = {
     'QB': '#FFD700',  # Gold
     'RB': '#87CEFA',  # Light Blue
@@ -39,60 +34,49 @@ pos_colors = {
     'DEF':'#FFB6C1'   # Light Pink
 }
 
-# -----------------------
-# 4. Sidebar: Position filters
-# -----------------------
-st.sidebar.title("Filters")
-selected_positions = st.sidebar.multiselect(
-    "Select positions to display:",
-    options=['QB', 'RB', 'WR', 'TE', 'K', 'DEF'],
-    default=['QB', 'RB', 'WR', 'TE', 'K', 'DEF']
-)
+# Fantasy lineup structure
+lineup = {
+    "QB": 1,
+    "RB": 2,
+    "WR": 2,
+    "TE": 1,
+    "K": 1,
+    "DEF": 1
+}
 
-team1_df = team1_df[team1_df['position'].isin(selected_positions)]
-team2_df = team2_df[team2_df['position'].isin(selected_positions)]
+st.markdown("## 🏈 College Football Fantasy Matchup")
 
-# -----------------------
-# 5. Title
-# -----------------------
-st.markdown("## 🏈 College Football Fantasy Scoreboard")
+# Loop through each position slot
+for pos, count in lineup.items():
+    for i in range(1, count + 1):
+        cols = st.columns([4, 2, 4])  # Team1 | Slot | Team2
 
-# -----------------------
-# 6. Horizontal matchup layout
-# -----------------------
-cols = st.columns(2)
+        with cols[0]:
+            player1 = st.selectbox(
+                f"Team 1 {pos}{i}",
+                options=team1_df[team1_df['position'] == pos]['Player'].tolist(),
+                key=f"team1_{pos}{i}"
+            )
+            if player1:
+                row = team1_df[team1_df['Player'] == player1].iloc[0]
+                st.markdown(f"**{player1}** — {row['Fantasy Points']} pts  \n[Roster Link]({row['Roster URL']})")
 
-def render_cards(df, container):
-    for i, row in df.iterrows():
-        color = pos_colors.get(row['position'], '#FFFFFF')
-        # Dynamic player selection
-        player = container.selectbox(
-            f"{row['Slot']}",
-            options=[row['Player']],  # For now only current player; can expand to choose others
-            key=f"{row['Slot']}"
-        )
-        container.markdown(f"""
-        <div style="
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 10px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-        ">
-            <div style="background-color:{color}; padding:5px; border-radius:5px; font-weight:bold;">
-                {row['Slot']}
+        with cols[1]:
+            color = pos_colors.get(pos, '#FFFFFF')
+            st.markdown(f"""
+            <div style="text-align:center; background-color:{color}; padding:10px; 
+                        border-radius:8px; font-weight:bold; margin:5px;">
+                {pos}{i}
             </div>
-            <div style="margin-top:5px;">
-                {player} | {row['Fantasy Points']} pts <br>
-                <a href="{row['Roster URL']}" target="_blank">Roster</a>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
-with cols[0]:
-    st.markdown("### Team 1")
-    render_cards(team1_df, st)
-
-with cols[1]:
-    st.markdown("### Team 2")
-    render_cards(team2_df, st)
+        with cols[2]:
+            player2 = st.selectbox(
+                f"Team 2 {pos}{i}",
+                options=team2_df[team2_df['position'] == pos]['Player'].tolist(),
+                key=f"team2_{pos}{i}"
+            )
+            if player2:
+                row = team2_df[team2_df['Player'] == player2].iloc[0]
+                st.markdown(f"**{player2}** — {row['Fantasy Points']} pts  \n[Roster Link]({row['Roster URL']})")
 
