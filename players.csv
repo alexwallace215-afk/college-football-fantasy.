@@ -1,0 +1,9 @@
+player_id,player_name,team_id,position,depth,roster_url,injury_status,espn_id
+1,Ty Simpson,1,QB,1,https://www.espn.com/college-football/player/_/id/5141426,active,4685522
+2,Austin Mack,1,QB,2,https://www.espn.com/college-football/player/_/id/5141602,active,5079508
+3,Richard Young,1,RB,1,https://www.espn.com/college-football/player/_/id/5141603,active,4871081
+4,Daniel Hill,1,RB,2,https://www.espn.com/college-football/player/_/id/5141604,active,5079506
+5,Gunner Stockton,2,QB,1,https://www.espn.com/college-football/player/_/id/5141608,active,4685578
+6,Ryan Puglisi,2,QB,2,https://www.espn.com/college-football/player/_/id/5141609,active,5079679
+7,Roderick Robinson II,2,RB,1,https://www.espn.com/college-football/player/_/id/5141610,active,4918110
+8,Cash Jones,2,RB,2,https://www.espn.com/college-football/player/_/id/5141611,active,4881826
