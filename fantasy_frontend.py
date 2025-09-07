@@ -2,11 +2,13 @@ import pandas as pd
 import streamlit as st
 
 # -----------------------
-# Load scoreboard CSV
+# 1. Load CSV
 # -----------------------
 scoreboard = pd.read_csv("fantasy_scoreboard.csv")
 
-# Extract teams
+# -----------------------
+# 2. Extract teams
+# -----------------------
 scoreboard['team'] = scoreboard['Slot'].apply(lambda x: x.split()[0])
 teams = scoreboard['team'].unique()
 
@@ -15,21 +17,21 @@ if len(teams) != 2:
     st.stop()
 
 team1, team2 = teams
-
 team1_df = scoreboard[scoreboard['team'] == team1].copy()
 team2_df = scoreboard[scoreboard['team'] == team2].copy()
 
 # -----------------------
-# Extract position for color mapping
+# 3. Extract position from Slot for color coding
 # -----------------------
 def get_position(slot):
+    # Example: 'Alabama QB1' -> 'QB'
     return ''.join([c for c in slot.split()[1] if not c.isdigit()])
 
 team1_df['position'] = team1_df['Slot'].apply(get_position)
 team2_df['position'] = team2_df['Slot'].apply(get_position)
 
 # -----------------------
-# Define color mapping
+# 4. Define color mapping for positions
 # -----------------------
 pos_colors = {
     'QB': '#FFD700',  # Gold
@@ -41,45 +43,40 @@ pos_colors = {
 }
 
 # -----------------------
-# Title
+# 5. Title
 # -----------------------
 st.markdown("## 🏈 College Football Fantasy Scoreboard")
 
 # -----------------------
-# Matchup grid
+# 6. Horizontal matchup layout
 # -----------------------
-max_len = max(len(team1_df), len(team2_df))
+cols = st.columns(2)
 
-for i in range(max_len):
-    cols = st.columns(2)
-    
-    # Team 1 player
-    if i < len(team1_df):
-        row = team1_df.iloc[i]
+def render_cards(df, col):
+    for _, row in df.iterrows():
         color = pos_colors.get(row['position'], '#FFFFFF')
-        cols[0].markdown(f"""
+        col.markdown(f"""
         <div style="
-            border-radius:10px; padding:10px; margin-bottom:5px;
-            background-color:{color}; box-shadow:2px 2px 5px rgba(0,0,0,0.15);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
         ">
-            <strong>{row['Slot']}</strong><br>
-            {row['Player']} | {row['Fantasy Points']} pts<br>
-            <a href="{row['Roster URL']}" target="_blank">Roster</a>
+            <div style="background-color:{color}; padding:5px; border-radius:5px; font-weight:bold;">
+                {row['Slot']}
+            </div>
+            <div style="margin-top:5px;">
+                {row['Player']} | {row['Fantasy Points']} pts <br>
+                <a href="{row['Roster URL']}" target="_blank">Roster</a>
+            </div>
         </div>
         """, unsafe_allow_html=True)
-    
-    # Team 2 player
-    if i < len(team2_df):
-        row = team2_df.iloc[i]
-        color = pos_colors.get(row['position'], '#FFFFFF')
-        cols[1].markdown(f"""
-        <div style="
-            border-radius:10px; padding:10px; margin-bottom:5px;
-            background-color:{color}; box-shadow:2px 2px 5px rgba(0,0,0,0.15);
-        ">
-            <strong>{row['Slot']}</strong><br>
-            {row['Player']} | {row['Fantasy Points']} pts<br>
-            <a href="{row['Roster URL']}" target="_blank">Roster</a>
-        </div>
-        """, unsafe_allow_html=True)
+
+with cols[0]:
+    st.markdown("### Team 1")
+    render_cards(team1_df, st)
+
+with cols[1]:
+    st.markdown("### Team 2")
+    render_cards(team2_df, st)
 
