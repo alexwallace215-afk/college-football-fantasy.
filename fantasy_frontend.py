@@ -1,9 +1,9 @@
 import pandas as pd
 import streamlit as st
 
-# ==========================
+# ----------------------------
 # Load scoreboard CSV
-# ==========================
+# ----------------------------
 scoreboard = pd.read_csv("fantasy_scoreboard.csv")
 
 # Extract teams
@@ -15,143 +15,119 @@ if len(teams) != 2:
     st.stop()
 
 team1, team2 = teams
+
 team1_df = scoreboard[scoreboard['team'] == team1].copy()
 team2_df = scoreboard[scoreboard['team'] == team2].copy()
 
-# Extract position (QB, RB, WR, etc.)
+# Extract position for color mapping
 def get_position(slot):
     return ''.join([c for c in slot.split()[1] if not c.isdigit()])
 
 team1_df['position'] = team1_df['Slot'].apply(get_position)
 team2_df['position'] = team2_df['Slot'].apply(get_position)
 
-# ==========================
-# Custom CSS for UI
-# ==========================
-st.markdown("""
+# ----------------------------
+# Position color mapping
+# ----------------------------
+pos_colors = {
+    'QB': '#FFD700',   # Gold
+    'RB': '#87CEFA',   # Light Blue
+    'WR': '#90EE90',   # Light Green
+    'TE': '#FFA07A',   # Light Salmon
+    'K':  '#D3D3D3',   # Light Gray
+    'DEF':'#FFB6C1'    # Light Pink
+}
+
+# ----------------------------
+# Background styling
+# ----------------------------
+st.markdown(
+    """
     <style>
-    /* Whole page background */
     .stApp {
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        background: linear-gradient(to bottom, #000000, #1a1a1a);
         color: white;
     }
-
-    /* Team headers */
-    .team-header {
-        font-size: 22px;
-        font-weight: bold;
-        text-align: center;
-        padding: 10px;
-        border-radius: 10px;
-        margin-bottom: 15px;
-    }
-    .team1-header {
-        background: rgba(220,20,60,0.8); /* Crimson Red */
-        color: white;
-    }
-    .team2-header {
-        background: rgba(30,144,255,0.8); /* Dodger Blue */
-        color: white;
-    }
-
-    /* Position label (middle slot indicator) */
-    .position-label {
-        font-size: 18px;
-        font-weight: bold;
-        text-align: center;
-        margin-top: 12px;
-        margin-bottom: 12px;
-        color: #FFD700;  /* Gold highlight */
-    }
-
-    /* Player cards */
     .card {
         border-radius: 12px;
-        padding: 10px;
-        margin: 5px 0px;
-        background: rgba(255,255,255,0.1);  /* semi-transparent */
-        box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
-        color: white;
+        padding: 12px;
+        margin: 8px 0;
+        box-shadow: 2px 2px 6px rgba(0,0,0,0.5);
+        background-color: #2c2c2c;
     }
-
-    /* Slot label (QB1, RB1, etc.) */
-    .slot-label {
-        border-radius: 6px;
-        padding: 6px;
+    .position-label {
         font-weight: bold;
-        margin-bottom: 5px;
-        color: black;
-    }
-
-    /* Points style */
-    .points {
-        font-size: 16px;
-        font-weight: bold;
-        color: #FFD700;
-    }
-
-    /* Links */
-    a {
-        color: #87CEFA;
-        text-decoration: none;
-        font-weight: bold;
-    }
-    a:hover {
-        text-decoration: underline;
+        text-align: center;
+        padding: 8px;
+        border-radius: 8px;
     }
     </style>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True
+)
 
-# ==========================
+# ----------------------------
 # Title
-# ==========================
-st.markdown("## 🏈 College Football Fantasy Matchup")
+# ----------------------------
+st.markdown("<h1 style='text-align: center;'>🏈 College Football Fantasy Scoreboard</h1>", unsafe_allow_html=True)
 
-# ==========================
-# Matchup columns
-# ==========================
-cols = st.columns([4, 1, 4])
+# ----------------------------
+# Align matchups by position
+# ----------------------------
+all_positions = sorted(set(team1_df['position']).union(set(team2_df['position'])))
 
-# Render team headers
-with cols[0]:
-    st.markdown('<div class="team-header team1-header">Team 1</div>', unsafe_allow_html=True)
-with cols[2]:
-    st.markdown('<div class="team-header team2-header">Team 2</div>', unsafe_allow_html=True)
+for pos in all_positions:
+    col1, col2, col3 = st.columns([4, 2, 4])  # left, middle, right
 
-# Group by position (so we get QB, RB, WR, etc.)
-positions = sorted(set(team1_df['position']).union(set(team2_df['position'])))
+    team1_players = team1_df[team1_df['position'] == pos]
+    team2_players = team2_df[team2_df['position'] == pos]
 
-for pos in positions:
-    team1_pos = team1_df[team1_df['position'] == pos]
-    team2_pos = team2_df[team2_df['position'] == pos]
+    color = pos_colors.get(pos, '#444444')
 
-    max_len = max(len(team1_pos), len(team2_pos))
-
-    for i in range(max_len):
-        p1 = team1_pos.iloc[i] if i < len(team1_pos) else None
-        p2 = team2_pos.iloc[i] if i < len(team2_pos) else None
-
-        with cols[0]:
-            if p1 is not None:
-                st.markdown(f"""
+    # Left: Team 1 players
+    with col1:
+        for _, row in team1_players.iterrows():
+            st.markdown(
+                f"""
                 <div class="card">
-                    <div class="slot-label" style="background-color:#444;">{p1['Slot']}</div>
-                    {p1['Player']} <br>
-                    <span class="points">{p1['Fantasy Points']} pts</span><br>
-                    <a href="{p1['Roster URL']}" target="_blank">Roster</a>
+                    <div style="background-color:{color}; padding:6px; border-radius:6px; font-weight:bold;">
+                        {row['Slot']}
+                    </div>
+                    <div style="margin-top:6px;">
+                        {row['Player']} | {row['Fantasy Points']} pts <br>
+                        <a href="{row['Roster URL']}" target="_blank">Roster</a>
+                    </div>
                 </div>
-                """, unsafe_allow_html=True)
+                """,
+                unsafe_allow_html=True
+            )
 
-        with cols[1]:
-            st.markdown(f'<div class="position-label">{pos}</div>', unsafe_allow_html=True)
+    # Middle: Position indicator
+    with col2:
+        st.markdown(
+            f"""
+            <div class="position-label" style="background-color:{color};">
+                {pos}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-        with cols[2]:
-            if p2 is not None:
-                st.markdown(f"""
+    # Right: Team 2 players
+    with col3:
+        for _, row in team2_players.iterrows():
+            st.markdown(
+                f"""
                 <div class="card">
-                    <div class="slot-label" style="background-color:#444;">{p2['Slot']}</div>
-                    {p2['Player']} <br>
-                    <span class="points">{p2['Fantasy Points']} pts</span><br>
-                    <a href="{p2['Roster URL']}" target="_blank">Roster</a>
+                    <div style="background-color:{color}; padding:6px; border-radius:6px; font-weight:bold;">
+                        {row['Slot']}
+                    </div>
+                    <div style="margin-top:6px;">
+                        {row['Player']} | {row['Fantasy Points']} pts <br>
+                        <a href="{row['Roster URL']}" target="_blank">Roster</a>
+                    </div>
                 </div>
-                """, unsafe_allow_html=True)
+                """,
+                unsafe_allow_html=True
+            )
+
