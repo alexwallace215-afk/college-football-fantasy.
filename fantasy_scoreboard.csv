@@ -1,9 +1,22 @@
-Slot,Player,Fantasy Points,Roster URL
-Alabama QB1,Ty Simpson,25.3,https://www.espn.com/college-football/player/_/id/5141426
-Alabama QB2,Austin Mack,14.2,https://www.espn.com/college-football/player/_/id/5141602
-Alabama RB1,Richard Young,2.5,https://www.espn.com/college-football/player/_/id/5141603
-Alabama RB2,Daniel Hill,1.0,https://www.espn.com/college-football/player/_/id/5141604
-Georgia QB1,Gunner Stockton,13.7,https://www.espn.com/college-football/player/_/id/5141608
-Georgia QB2,Ryan Puglisi,5.9,https://www.espn.com/college-football/player/_/id/5141609
-Georgia RB1,Roderick Robinson II,9.4,https://www.espn.com/college-football/player/_/id/5141610
-Georgia RB2,Cash Jones,1.0,https://www.espn.com/college-football/player/_/id/5141611
+player_id,player_name,team_id,position,depth,roster_url,injury_status,espn_id,rushing_yards,receiving_yards,passing_yards,tds,int,Fantasy Points,Slot
+1,Ty Simpson,1,QB,1,https://www.espn.com/college-football/player/_/id/4685522,active,4685522,51,63,363,3,1,41.9,Alabama QB
+2,Austin Mack,1,QB,2,https://www.espn.com/college-football/player/_/id/5079508,active,5079508,92,59,54,2,0,29.3,Alabama QB
+3,Richard Young,1,RB,1,https://www.espn.com/college-football/player/_/id/4871081,active,4871081,14,20,243,3,2,27.1,Alabama RB
+4,Daniel Hill,1,RB,2,https://www.espn.com/college-football/player/_/id/5079506,active,5079506,71,32,319,2,1,33.1,Alabama RB
+5,Gunner Stockton,2,QB,1,https://www.espn.com/college-football/player/_/id/4685578,active,4685578,60,75,130,3,1,34.7,Georgia QB
+6,Ryan Puglisi,2,QB,2,https://www.espn.com/college-football/player/_/id/5079679,active,5079679,20,57,306,0,1,17.9,Georgia QB
+7,Roderick Robinson II,2,RB,1,https://www.espn.com/college-football/player/_/id/4918110,active,4918110,82,21,134,3,1,31.7,Georgia RB
+8,Cash Jones,2,RB,2,https://www.espn.com/college-football/player/_/id/4881826,active,4881826,86,88,20,2,1,28.2,Georgia RB
+9,Cole Adams,1,WR,1,https://www.espn.com/college-football/player/_/id/4918121,active,4918121,74,48,328,2,1,35.3,Alabama WR
+10,Germie Bernard,1,WR,2,https://www.espn.com/college-football/player/_/id/4685261,active,4685261,74,90,166,1,2,25.0,Alabama WR
+11,Lotzeir Brooks,1,WR,3,https://www.espn.com/college-football/player/_/id/5141394,active,5141394,87,58,273,0,2,21.4,Alabama WR
+12,Josh Cuevas,1,TE,1,https://www.espn.com/college-football/player/_/id/4876132,active,4876132,99,41,387,3,1,45.5,Alabama TE
+13,Kaleb Edwards,1,TE,2,https://www.espn.com/college-football/player/_/id/5142591,active,5142591,23,91,88,1,2,16.9,Alabama TE
+14,Conor Talty,1,K,1,https://www.espn.com/college-football/player/_/id/5081854,active,5081854,2,59,315,3,0,36.7,Alabama K
+15,Peter Notaro,1,K,2,https://www.espn.com/college-football/player/_/id/5257317,active,5257317,21,79,13,3,1,26.5,Alabama K
+16,Dillon Bell,1,WR,1,https://www.espn.com/college-football/player/_/id/4712579,active,4712579,52,14,241,1,0,22.2,Alabama WR
+17,Jeremy Bell,1,WR,2,https://www.espn.com/college-football/player/_/id/5150831,active,5150831,1,61,264,1,0,22.8,Alabama WR
+18,Luke Bennett,1,WR,3,https://www.espn.com/college-football/player/_/id/5081059,active,5081059,87,61,345,1,1,32.6,Alabama WR
+19,Oscar Delp,1,TE,1,https://www.espn.com/college-football/player/_/id/4702559,active,4702559,29,46,52,1,2,11.6,Alabama TE
+20,Colton Heinrich,1,TE,2,https://www.espn.com/college-football/player/_/id/5130409,active,5130409,37,61,385,1,0,31.2,Alabama TE
+21,Peyton Woodring,1,K,1,https://www.espn.com/college-football/player/_/id/5077226,active,5077226,1,50,339,3,1,34.7,Alabama K
