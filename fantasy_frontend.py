@@ -33,14 +33,15 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Layout: Team 1 | Position | Team 2
-col1, col2, col3 = st.columns([4, 2, 4])
-
 team1_lineup = {}
 team2_lineup = {}
 
-# Loop through each lineup slot
+# ------------------------
+# Render lineup row by row
+# ------------------------
 for pos in lineup_template:
+    col1, col2, col3 = st.columns([4, 2, 4])
+
     with col1:
         choice = st.selectbox(
             f"Team 1 {pos}",
