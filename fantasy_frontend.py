@@ -10,7 +10,7 @@ def get_position(slot):
 
 scoreboard['position'] = scoreboard['Slot'].apply(get_position)
 
-# Define fantasy slots
+# Define fantasy slots with duplicates (RB, WR, etc.)
 fantasy_slots = ["QB", "RB", "RB", "WR", "WR", "TE", "K", "DEF"]
 
 # Define position colors
@@ -41,24 +41,24 @@ st.markdown("<h1 style='text-align:center;'>🏈 College Football Fantasy Matchu
 
 # Build player options
 options_by_pos = {}
-for pos in fantasy_slots:
+for pos in set(fantasy_slots):  # unique positions
     options = scoreboard[scoreboard['position'] == pos]['Slot'].tolist()
     options_by_pos[pos] = [""] + options  # empty option for unselected
 
 # Team 1 and Team 2 lineups
 st.markdown("### Team 1 vs Team 2")
 
-cols = st.columns([4, 1, 4])  # left, middle (position), right
+cols = st.columns([4, 1, 4])  # left, middle, right
 
 team1_lineup = {}
 team2_lineup = {}
 
-for pos in fantasy_slots:
+for i, pos in enumerate(fantasy_slots):
     with cols[0]:
-        team1_lineup[pos] = st.selectbox(
+        team1_lineup[f"{pos}{i}"] = st.selectbox(
             f"Team 1 {pos}",
             options_by_pos[pos],
-            key=f"team1_{pos}"
+            key=f"team1_{pos}_{i}"
         )
     with cols[1]:
         color = pos_colors.get(pos, "#FFFFFF")
@@ -67,17 +67,17 @@ for pos in fantasy_slots:
             unsafe_allow_html=True
         )
     with cols[2]:
-        team2_lineup[pos] = st.selectbox(
+        team2_lineup[f"{pos}{i}"] = st.selectbox(
             f"Team 2 {pos}",
             options_by_pos[pos],
-            key=f"team2_{pos}"
+            key=f"team2_{pos}_{i}"
         )
 
 # Score calculation with safe lookup
 def calculate_score(lineup):
     total = 0
     details = []
-    for pos, player_slot in lineup.items():
+    for _, player_slot in lineup.items():
         if not player_slot:  # skip empty
             continue
         match = scoreboard[scoreboard['Slot'] == player_slot]
