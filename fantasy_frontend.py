@@ -18,12 +18,33 @@ scoreboard['Slot'] = scoreboard.apply(
 # Ensure Fantasy Points is numeric
 scoreboard['Fantasy Points'] = pd.to_numeric(scoreboard['Fantasy Points'], errors='coerce').fillna(0)
 
-# Set a lighter background gradient and style
+# CSS for background, vertical alignment, and zebra stripes
 st.markdown("""
     <style>
     .stApp {
         background: linear-gradient(to bottom, #f2f2f2, #e0e0e0);
         color: #111111;
+    }
+    .dropdown-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .middle-pos {
+        text-align: center;
+        font-weight: bold;
+        border-radius: 5px;
+        padding: 12px 0;
+    }
+    .row-even {
+        background-color: #ffffff;
+        padding: 4px;
+        border-radius: 5px;
+    }
+    .row-odd {
+        background-color: #e6e6e6;
+        padding: 4px;
+        border-radius: 5px;
     }
     a {
         color: #0073e6;
@@ -33,7 +54,6 @@ st.markdown("""
 
 st.markdown("## 🏈 College Football Fantasy Scoreboard")
 
-# Define positions and color coding (for middle indicators)
 positions_order = ["QB", "RB", "RB", "WR", "WR", "TE", "K"]
 pos_colors = {
     "QB": "#FFD700",
@@ -43,68 +63,85 @@ pos_colors = {
     "K": "#D3D3D3",
 }
 
-# Prepare dropdown options per position
+# Dropdown options per position
 options_by_pos = {}
 for pos in ["QB", "RB", "WR", "TE", "K"]:
     options_by_pos[pos] = scoreboard[scoreboard['position'] == pos]['Slot'].tolist()
 
-# Initialize session state for team lineups
+# Initialize session state for independent slots
 if "team1_lineup" not in st.session_state:
-    st.session_state.team1_lineup = {pos: options_by_pos[pos][0] for pos in positions_order if options_by_pos[pos]}
+    st.session_state.team1_lineup = {}
 if "team2_lineup" not in st.session_state:
-    st.session_state.team2_lineup = {pos: options_by_pos[pos][0] for pos in positions_order if options_by_pos[pos]}
+    st.session_state.team2_lineup = {}
 
-# Create columns for horizontal matchup view
-cols = st.columns([1, 0.2, 1])  # Team1 | Positions | Team2
+# ---------------- Team vs Team header ----------------
+header_cols = st.columns([1, 0.3, 1])
+header_cols[0].markdown("### Team 1")
+header_cols[1].markdown("### vs")
+header_cols[2].markdown("### Team 2")
 
-team1_lineup = st.session_state.team1_lineup
-team2_lineup = st.session_state.team2_lineup
+# Track duplicates to generate unique slot keys
+pos_count = {}
+row_index = 0  # For alternating row shading
 
-# Helper to render dropdowns and show fantasy points
-def render_team_lineup(col, lineup, team_name):
-    pos_count = {}  # Track occurrence of positions for unique keys
-    for pos in positions_order:
-        if pos not in options_by_pos or not options_by_pos[pos]:
-            continue
+for pos in positions_order:
+    if pos not in options_by_pos or not options_by_pos[pos]:
+        continue
+    pos_count[pos] = pos_count.get(pos, 0) + 1
+    index_suffix = pos_count[pos]
 
-        # Count occurrence of the position
-        pos_count[pos] = pos_count.get(pos, 0) + 1
-        index_suffix = pos_count[pos]  # Unique key
+    # Unique slot keys
+    key1 = f"{pos}_{index_suffix}_team1"
+    key2 = f"{pos}_{index_suffix}_team2"
 
-        slot = lineup[pos]
-        # Dropdown
-        selection = col.selectbox(
-            f"{team_name} {pos}",
-            options_by_pos[pos],
-            index=options_by_pos[pos].index(slot),
-            key=f"{team_name}_{pos}_{index_suffix}"  # Unique key
-        )
-        lineup[pos] = selection
+    # Initialize session state if empty
+    if key1 not in st.session_state.team1_lineup:
+        st.session_state.team1_lineup[key1] = options_by_pos[pos][0]
+    if key2 not in st.session_state.team2_lineup:
+        st.session_state.team2_lineup[key2] = options_by_pos[pos][0]
 
-        # Display link to roster
-        player_row = scoreboard[scoreboard['Slot'] == selection].iloc[0]
-        roster_link = player_row.get("roster_url", team_roster_map.get(str(player_row["team_id"]), "#"))
-        col.markdown(f"<a href='{roster_link}' target='_blank'>Roster</a>", unsafe_allow_html=True)
-        col.markdown("---")
+    # Choose row style for zebra stripes
+    row_class = "row-even" if row_index % 2 == 0 else "row-odd"
+    row_index += 1
 
-# Render Team 1
-with cols[0]:
-    st.markdown("### Team 1")
-    render_team_lineup(st, team1_lineup, "team1")
+    # Outer 3 columns
+    row_cols = st.columns([1, 0.3, 1])
 
-# Render position indicators in middle, aligned with rows
-with cols[1]:
-    pos_count = {}
-    for pos in positions_order:
-        pos_count[pos] = pos_count.get(pos, 0) + 1
-        st.markdown(f"<div style='text-align:center; font-weight:bold; margin:10px 0; background-color:{pos_colors.get(pos,'#FFFFFF')}; border-radius:5px; padding:5px'>{pos}</div>", unsafe_allow_html=True)
+    # ---------------- Team 1 dropdown + points ----------------
+    with row_cols[0]:
+        st.markdown(f"<div class='{row_class}'>", unsafe_allow_html=True)
+        inner_cols = st.columns([2, 1])
+        slot1 = st.session_state.team1_lineup[key1]
+        selection1 = inner_cols[0].selectbox("", options_by_pos[pos], index=options_by_pos[pos].index(slot1), key=key1)
+        st.session_state.team1_lineup[key1] = selection1
 
-# Render Team 2
-with cols[2]:
-    st.markdown("### Team 2")
-    render_team_lineup(st, team2_lineup, "team2")
+        player1_row = scoreboard[scoreboard['Slot'] == selection1].iloc[0]
+        points1 = player1_row["Fantasy Points"]
+        roster1 = team_roster_map.get(str(player1_row["team_id"]), "#")
+        inner_cols[1].markdown(f"<div class='dropdown-row'><span style='font-weight:bold'>{points1} pts</span> | <a href='{roster1}' target='_blank'>Roster</a></div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-# Calculate and display total points per team
+    # ---------------- Middle position indicator ----------------
+    row_cols[1].markdown(
+        f"<div class='middle-pos' style='background-color:{pos_colors.get(pos,'#FFFFFF')}'>{pos}</div>",
+        unsafe_allow_html=True
+    )
+
+    # ---------------- Team 2 dropdown + points ----------------
+    with row_cols[2]:
+        st.markdown(f"<div class='{row_class}'>", unsafe_allow_html=True)
+        inner_cols = st.columns([2, 1])
+        slot2 = st.session_state.team2_lineup[key2]
+        selection2 = inner_cols[0].selectbox("", options_by_pos[pos], index=options_by_pos[pos].index(slot2), key=key2)
+        st.session_state.team2_lineup[key2] = selection2
+
+        player2_row = scoreboard[scoreboard['Slot'] == selection2].iloc[0]
+        points2 = player2_row["Fantasy Points"]
+        roster2 = team_roster_map.get(str(player2_row["team_id"]), "#")
+        inner_cols[1].markdown(f"<div class='dropdown-row'><span style='font-weight:bold'>{points2} pts</span> | <a href='{roster2}' target='_blank'>Roster</a></div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# ---------------- Total points ----------------
 def calculate_total(lineup):
     total = 0
     for slot in lineup.values():
@@ -112,7 +149,7 @@ def calculate_total(lineup):
         total += row["Fantasy Points"]
     return total
 
-team1_total = calculate_total(team1_lineup)
-team2_total = calculate_total(team2_lineup)
+team1_total = calculate_total(st.session_state.team1_lineup)
+team2_total = calculate_total(st.session_state.team2_lineup)
 
 st.markdown(f"### Total Points: Team 1 = {team1_total} | Team 2 = {team2_total}")
