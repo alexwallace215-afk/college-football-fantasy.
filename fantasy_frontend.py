@@ -1,11 +1,30 @@
 import pandas as pd
 import streamlit as st
 
-# Load fantasy scoreboard CSV
-scoreboard = pd.read_csv("fantasy_scoreboard.csv")
+# ---------------- Load CSVs ----------------
+try:
+    scoreboard = pd.read_csv("fantasy_scoreboard.csv")
+    scoreboard.columns = scoreboard.columns.str.strip()  # Remove extra spaces
 
-# Load teams CSV
-teams = pd.read_csv("teams.csv")
+    teams = pd.read_csv("teams.csv")
+    teams.columns = teams.columns.str.strip()
+except Exception as e:
+    st.error(f"Error loading CSVs: {e}")
+    st.stop()
+
+# ---------------- Check required columns ----------------
+required_scoreboard_cols = {"team_id", "position", "depth", "Fantasy Points"}
+required_team_cols = {"team_id", "team_name", "roster_url"}
+
+if not required_scoreboard_cols.issubset(scoreboard.columns):
+    st.error(f"Missing columns in scoreboard CSV: {required_scoreboard_cols - set(scoreboard.columns)}")
+    st.stop()
+
+if not required_team_cols.issubset(teams.columns):
+    st.error(f"Missing columns in teams CSV: {required_team_cols - set(teams.columns)}")
+    st.stop()
+
+# ---------------- Data preprocessing ----------------
 team_name_map = dict(zip(teams['team_id'].astype(str), teams['team_name']))
 team_roster_map = dict(zip(teams['team_id'].astype(str), teams['roster_url']))
 
@@ -15,15 +34,16 @@ scoreboard['Slot'] = scoreboard.apply(
     axis=1
 )
 
-# Ensure Fantasy Points is numeric
+# Ensure numeric columns
 scoreboard['Fantasy Points'] = pd.to_numeric(scoreboard['Fantasy Points'], errors='coerce').fillna(0)
+scoreboard['depth'] = pd.to_numeric(scoreboard['depth'], errors='coerce').fillna(1)
 
-# CSS for background, vertical alignment, and zebra stripes
+# ---------------- CSS styling ----------------
 st.markdown("""
     <style>
     .stApp {
-        background: linear-gradient(to bottom, #f2f2f2, #e0e0e0);
-        color: #111111;
+        background: linear-gradient(to bottom, #1a1a1a, #2e2e2e);  /* Darker gradient */
+        color: #ffffff;
     }
     .dropdown-row {
         display: flex;
@@ -37,17 +57,17 @@ st.markdown("""
         padding: 12px 0;
     }
     .row-even {
-        background-color: #ffffff;
+        background-color: #2a2a2a;
         padding: 4px;
         border-radius: 5px;
     }
     .row-odd {
-        background-color: #e6e6e6;
+        background-color: #383838;
         padding: 4px;
         border-radius: 5px;
     }
     a {
-        color: #0073e6;
+        color: #FFD700;
     }
     </style>
 """, unsafe_allow_html=True)
