@@ -15,7 +15,6 @@ if len(teams) != 2:
     st.stop()
 
 team1, team2 = teams
-
 team1_df = scoreboard[scoreboard['team'] == team1].copy()
 team2_df = scoreboard[scoreboard['team'] == team2].copy()
 
@@ -69,24 +68,29 @@ st.markdown(
 # ----------------------------
 # Title
 # ----------------------------
-st.markdown("<h1 style='text-align: center;'>🏈 College Football Fantasy Scoreboard</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>🏈 College Football Fantasy Matchup</h1>", unsafe_allow_html=True)
 
 # ----------------------------
-# Align matchups by position
+# Interactive selection
 # ----------------------------
 all_positions = sorted(set(team1_df['position']).union(set(team2_df['position'])))
 
+team1_total, team2_total = 0, 0
+
 for pos in all_positions:
-    col1, col2, col3 = st.columns([4, 2, 4])  # left, middle, right
+    col1, col2, col3 = st.columns([4, 2, 4])
 
     team1_players = team1_df[team1_df['position'] == pos]
     team2_players = team2_df[team2_df['position'] == pos]
 
     color = pos_colors.get(pos, '#444444')
 
-    # Left: Team 1 players
+    # Left: Team 1 selection
     with col1:
-        for _, row in team1_players.iterrows():
+        if not team1_players.empty:
+            label_options = team1_players['Slot'].tolist()
+            choice = st.selectbox(f"{team1} {pos}", label_options, key=f"{team1}_{pos}")
+            row = team1_players[team1_players['Slot'] == choice].iloc[0]
             st.markdown(
                 f"""
                 <div class="card">
@@ -94,13 +98,14 @@ for pos in all_positions:
                         {row['Slot']}
                     </div>
                     <div style="margin-top:6px;">
-                        {row['Player']} | {row['Fantasy Points']} pts <br>
+                        {row['Fantasy Points']} pts <br>
                         <a href="{row['Roster URL']}" target="_blank">Roster</a>
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
+            team1_total += row['Fantasy Points']
 
     # Middle: Position indicator
     with col2:
@@ -113,9 +118,12 @@ for pos in all_positions:
             unsafe_allow_html=True
         )
 
-    # Right: Team 2 players
+    # Right: Team 2 selection
     with col3:
-        for _, row in team2_players.iterrows():
+        if not team2_players.empty:
+            label_options = team2_players['Slot'].tolist()
+            choice = st.selectbox(f"{team2} {pos}", label_options, key=f"{team2}_{pos}")
+            row = team2_players[team2_players['Slot'] == choice].iloc[0]
             st.markdown(
                 f"""
                 <div class="card">
@@ -123,11 +131,21 @@ for pos in all_positions:
                         {row['Slot']}
                     </div>
                     <div style="margin-top:6px;">
-                        {row['Player']} | {row['Fantasy Points']} pts <br>
+                        {row['Fantasy Points']} pts <br>
                         <a href="{row['Roster URL']}" target="_blank">Roster</a>
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
+            team2_total += row['Fantasy Points']
 
+# ----------------------------
+# Team totals
+# ----------------------------
+st.markdown("---")
+col1, col2 = st.columns(2)
+with col1:
+    st.markdown(f"<h2 style='text-align: center;'>{team1} Total: {team1_total:.1f} pts</h2>", unsafe_allow_html=True)
+with col2:
+    st.markdown(f"<h2 style='text-align: center;'>{team2} Total: {team2_total:.1f} pts</h2>", unsafe_allow_html=True)
