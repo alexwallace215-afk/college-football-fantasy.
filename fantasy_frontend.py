@@ -1,145 +1,118 @@
 import pandas as pd
 import streamlit as st
 
-# -----------------------
-# 1. Load Fantasy Scoreboard CSV
-# -----------------------
+# Load fantasy scoreboard CSV
 scoreboard = pd.read_csv("fantasy_scoreboard.csv")
 
-# -----------------------
-# 2. Define Teams
-# -----------------------
-scoreboard['team'] = scoreboard['Slot'].apply(lambda x: x.split()[0])
-teams = scoreboard['team'].unique()
+# Load teams CSV
+teams = pd.read_csv("teams.csv")
+team_name_map = dict(zip(teams['team_id'].astype(str), teams['team_name']))
+team_roster_map = dict(zip(teams['team_id'].astype(str), teams['roster_url']))
 
-if len(teams) != 2:
-    st.warning("Expected exactly 2 teams for matchup view.")
-    st.stop()
+# Generate Slot column dynamically: e.g., Alabama RB1
+scoreboard['Slot'] = scoreboard.apply(
+    lambda row: f"{team_name_map.get(str(row['team_id']), 'Team'+str(row['team_id']))} {row['position'].upper()}{int(row['depth'])}",
+    axis=1
+)
 
-team1_name, team2_name = teams
+# Ensure Fantasy Points is numeric
+scoreboard['Fantasy Points'] = pd.to_numeric(scoreboard['Fantasy Points'], errors='coerce').fillna(0)
 
-team1_df = scoreboard[scoreboard['team'] == team1_name].copy()
-team2_df = scoreboard[scoreboard['team'] == team2_name].copy()
-
-# -----------------------
-# 3. Define Positions & Color Mapping
-# -----------------------
-positions_order = ["QB", "RB", "RB", "WR", "WR", "TE", "K", "DEF"]
-
-pos_colors = {
-    'QB': '#FFD700',  # Gold
-    'RB': '#87CEFA',  # Light Blue
-    'WR': '#90EE90',  # Light Green
-    'TE': '#FFA07A',  # Light Salmon
-    'K':  '#D3D3D3',  # Light Gray
-    'DEF':'#FFB6C1'   # Light Pink
-}
-
-# -----------------------
-# 4. Prepare Options for SelectBoxes
-# -----------------------
-def get_slot_label(row):
-    return f"{row['team']} {row['position']}{row['depth']}"
-
-team1_df['slot_label'] = team1_df.apply(get_slot_label, axis=1)
-team2_df['slot_label'] = team2_df.apply(get_slot_label, axis=1)
-
-options_by_pos = {}
-for pos in positions_order:
-    options_by_pos[pos] = list(team1_df[team1_df['position']==pos]['slot_label']) + \
-                           list(team2_df[team2_df['position']==pos]['slot_label'])
-
-# -----------------------
-# 5. Streamlit Layout & Styles
-# -----------------------
+# Set a lighter background gradient and style
 st.markdown("""
-<style>
+    <style>
     .stApp {
-        background: linear-gradient(to bottom, #000000, #1a1a1a);
-        color: white;
+        background: linear-gradient(to bottom, #f2f2f2, #e0e0e0);
+        color: #111111;
     }
-    a {color: #00FFFF;}
-</style>
+    a {
+        color: #0073e6;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-st.markdown("## 🏈 College Football Fantasy Matchup")
+st.markdown("## 🏈 College Football Fantasy Scoreboard")
 
-cols = st.columns([1,0.5,1])  # Team1 | Position | Team2
+# Define positions and color coding (for middle indicators)
+positions_order = ["QB", "RB", "RB", "WR", "WR", "TE", "K"]
+pos_colors = {
+    "QB": "#FFD700",
+    "RB": "#87CEFA",
+    "WR": "#90EE90",
+    "TE": "#FFA07A",
+    "K": "#D3D3D3",
+}
 
-# -----------------------
-# 6. Selection Widgets
-# -----------------------
-team1_lineup = {}
-team2_lineup = {}
+# Prepare dropdown options per position
+options_by_pos = {}
+for pos in ["QB", "RB", "WR", "TE", "K"]:
+    options_by_pos[pos] = scoreboard[scoreboard['position'] == pos]['Slot'].tolist()
 
-with cols[0]:
-    st.markdown(f"### {team1_name}")
-    for idx, pos in enumerate(positions_order):
-        unique_key = f"team1_{pos}_{idx}"
-        team1_lineup[pos] = st.selectbox(
-            f"{pos} Slot",
-            options_by_pos[pos],
-            key=unique_key
-        )
+# Initialize session state for team lineups
+if "team1_lineup" not in st.session_state:
+    st.session_state.team1_lineup = {pos: options_by_pos[pos][0] for pos in positions_order if options_by_pos[pos]}
+if "team2_lineup" not in st.session_state:
+    st.session_state.team2_lineup = {pos: options_by_pos[pos][0] for pos in positions_order if options_by_pos[pos]}
 
-with cols[2]:
-    st.markdown(f"### {team2_name}")
-    for idx, pos in enumerate(positions_order):
-        unique_key = f"team2_{pos}_{idx}"
-        team2_lineup[pos] = st.selectbox(
-            f"{pos} Slot",
-            options_by_pos[pos],
-            key=unique_key
-        )
+# Create columns for horizontal matchup view
+cols = st.columns([1, 0.2, 1])  # Team1 | Positions | Team2
 
-# -----------------------
-# 7. Position Indicators
-# -----------------------
-with cols[1]:
+team1_lineup = st.session_state.team1_lineup
+team2_lineup = st.session_state.team2_lineup
+
+# Helper to render dropdowns and show fantasy points
+def render_team_lineup(col, lineup, team_name):
+    pos_count = {}  # Track occurrence of positions for unique keys
     for pos in positions_order:
-        color = pos_colors.get(pos, '#FFFFFF')
-        st.markdown(f"""
-        <div style="
-            background-color:{color};
-            padding:8px;
-            border-radius:5px;
-            text-align:center;
-            font-weight:bold;
-            margin-bottom:10px;
-        ">{pos}</div>
-        """, unsafe_allow_html=True)
+        if pos not in options_by_pos or not options_by_pos[pos]:
+            continue
 
-# -----------------------
-# 8. Helper Function to Get Fantasy Points
-# -----------------------
-def get_points(slot_label):
-    row = scoreboard[scoreboard['Slot'] == slot_label]
-    if not row.empty:
-        return float(row['Fantasy Points'].values[0])
-    else:
-        return 0.0
+        # Count occurrence of the position
+        pos_count[pos] = pos_count.get(pos, 0) + 1
+        index_suffix = pos_count[pos]  # Unique key
 
-# -----------------------
-# 9. Calculate Team Totals
-# -----------------------
-team1_points = sum(get_points(slot) for slot in team1_lineup.values())
-team2_points = sum(get_points(slot) for slot in team2_lineup.values())
+        slot = lineup[pos]
+        # Dropdown
+        selection = col.selectbox(
+            f"{team_name} {pos}",
+            options_by_pos[pos],
+            index=options_by_pos[pos].index(slot),
+            key=f"{team_name}_{pos}_{index_suffix}"  # Unique key
+        )
+        lineup[pos] = selection
 
-# -----------------------
-# 10. Display Live Scoring Table
-# -----------------------
-st.markdown("## 🏟️ Live Matchup Table")
+        # Display link to roster
+        player_row = scoreboard[scoreboard['Slot'] == selection].iloc[0]
+        roster_link = player_row.get("roster_url", team_roster_map.get(str(player_row["team_id"]), "#"))
+        col.markdown(f"<a href='{roster_link}' target='_blank'>Roster</a>", unsafe_allow_html=True)
+        col.markdown("---")
 
-live_table = pd.DataFrame({
-    "Position": positions_order,
-    f"{team1_name} Slot": [team1_lineup[pos] for pos in positions_order],
-    f"{team1_name} Points": [get_points(team1_lineup[pos]) for pos in positions_order],
-    "Position Indicator": positions_order,
-    f"{team2_name} Slot": [team2_lineup[pos] for pos in positions_order],
-    f"{team2_name} Points": [get_points(team2_lineup[pos]) for pos in positions_order],
-})
+# Render Team 1
+with cols[0]:
+    st.markdown("### Team 1")
+    render_team_lineup(st, team1_lineup, "team1")
 
-# Display table with Streamlit
-st.dataframe(live_table, use_container_width=True)
+# Render position indicators in middle, aligned with rows
+with cols[1]:
+    pos_count = {}
+    for pos in positions_order:
+        pos_count[pos] = pos_count.get(pos, 0) + 1
+        st.markdown(f"<div style='text-align:center; font-weight:bold; margin:10px 0; background-color:{pos_colors.get(pos,'#FFFFFF')}; border-radius:5px; padding:5px'>{pos}</div>", unsafe_allow_html=True)
 
-st.markdown(f"### {team1_name} Total: {team1_points:.1f} pts | {team2_name} Total: {team2_points:.1f} pts")
+# Render Team 2
+with cols[2]:
+    st.markdown("### Team 2")
+    render_team_lineup(st, team2_lineup, "team2")
+
+# Calculate and display total points per team
+def calculate_total(lineup):
+    total = 0
+    for slot in lineup.values():
+        row = scoreboard[scoreboard['Slot'] == slot].iloc[0]
+        total += row["Fantasy Points"]
+    return total
+
+team1_total = calculate_total(team1_lineup)
+team2_total = calculate_total(team2_lineup)
+
+st.markdown(f"### Total Points: Team 1 = {team1_total} | Team 2 = {team2_total}")
