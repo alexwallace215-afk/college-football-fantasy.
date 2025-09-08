@@ -1,151 +1,97 @@
 import pandas as pd
 import streamlit as st
 
-# ----------------------------
-# Load scoreboard CSV
-# ----------------------------
+# Load player pool
 scoreboard = pd.read_csv("fantasy_scoreboard.csv")
 
-# Extract teams
-scoreboard['team'] = scoreboard['Slot'].apply(lambda x: x.split()[0])
-teams = scoreboard['team'].unique()
-
-if len(teams) != 2:
-    st.warning("Expected exactly 2 teams for matchup view.")
-    st.stop()
-
-team1, team2 = teams
-team1_df = scoreboard[scoreboard['team'] == team1].copy()
-team2_df = scoreboard[scoreboard['team'] == team2].copy()
-
-# Extract position for color mapping
+# Extract position (QB, RB, WR, etc.) from Slot
 def get_position(slot):
     return ''.join([c for c in slot.split()[1] if not c.isdigit()])
 
-team1_df['position'] = team1_df['Slot'].apply(get_position)
-team2_df['position'] = team2_df['Slot'].apply(get_position)
+scoreboard['position'] = scoreboard['Slot'].apply(get_position)
 
-# ----------------------------
+# Lineup template
+lineup_template = ["QB", "RB", "RB", "WR", "WR", "TE", "K", "DEF"]
+
 # Position color mapping
-# ----------------------------
 pos_colors = {
-    'QB': '#FFD700',   # Gold
-    'RB': '#87CEFA',   # Light Blue
-    'WR': '#90EE90',   # Light Green
-    'TE': '#FFA07A',   # Light Salmon
-    'K':  '#D3D3D3',   # Light Gray
-    'DEF':'#FFB6C1'    # Light Pink
+    'QB': '#FFD700',  # Gold
+    'RB': '#87CEFA',  # Light Blue
+    'WR': '#90EE90',  # Light Green
+    'TE': '#FFA07A',  # Salmon
+    'K':  '#D3D3D3',  # Gray
+    'DEF':'#FFB6C1'   # Pink
 }
 
-# ----------------------------
-# Background styling
-# ----------------------------
+# Title
 st.markdown(
     """
-    <style>
-    .stApp {
-        background: linear-gradient(to bottom, #000000, #1a1a1a);
-        color: white;
-    }
-    .card {
-        border-radius: 12px;
-        padding: 12px;
-        margin: 8px 0;
-        box-shadow: 2px 2px 6px rgba(0,0,0,0.5);
-        background-color: #2c2c2c;
-    }
-    .position-label {
-        font-weight: bold;
-        text-align: center;
-        padding: 8px;
-        border-radius: 8px;
-    }
-    </style>
+    <h1 style='text-align:center; color:white;'>
+        🏈 College Fantasy Matchup
+    </h1>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
-# ----------------------------
-# Title
-# ----------------------------
-st.markdown("<h1 style='text-align: center;'>🏈 College Football Fantasy Matchup</h1>", unsafe_allow_html=True)
+# Layout: Team 1 | Position | Team 2
+col1, col2, col3 = st.columns([4, 2, 4])
 
-# ----------------------------
-# Interactive selection
-# ----------------------------
-all_positions = sorted(set(team1_df['position']).union(set(team2_df['position'])))
+team1_lineup = {}
+team2_lineup = {}
 
-team1_total, team2_total = 0, 0
-
-for pos in all_positions:
-    col1, col2, col3 = st.columns([4, 2, 4])
-
-    team1_players = team1_df[team1_df['position'] == pos]
-    team2_players = team2_df[team2_df['position'] == pos]
-
-    color = pos_colors.get(pos, '#444444')
-
-    # Left: Team 1 selection
+# Loop through each lineup slot
+for pos in lineup_template:
     with col1:
-        if not team1_players.empty:
-            label_options = team1_players['Slot'].tolist()
-            choice = st.selectbox(f"{team1} {pos}", label_options, key=f"{team1}_{pos}")
-            row = team1_players[team1_players['Slot'] == choice].iloc[0]
-            st.markdown(
-                f"""
-                <div class="card">
-                    <div style="background-color:{color}; padding:6px; border-radius:6px; font-weight:bold;">
-                        {row['Slot']}
-                    </div>
-                    <div style="margin-top:6px;">
-                        {row['Fantasy Points']} pts <br>
-                        <a href="{row['Roster URL']}" target="_blank">Roster</a>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            team1_total += row['Fantasy Points']
+        choice = st.selectbox(
+            f"Team 1 {pos}",
+            options=scoreboard[scoreboard['position'] == pos]['Slot'].tolist(),
+            key=f"team1_{pos}_{len(team1_lineup)}"
+        )
+        team1_lineup[pos] = choice
 
-    # Middle: Position indicator
     with col2:
         st.markdown(
-            f"""
-            <div class="position-label" style="background-color:{color};">
-                {pos}
-            </div>
-            """,
-            unsafe_allow_html=True
+            f"<div style='text-align:center; background-color:{pos_colors.get(pos, '#333')}; "
+            f"color:black; font-weight:bold; padding:5px; border-radius:5px; margin:5px;'>{pos}</div>",
+            unsafe_allow_html=True,
         )
 
-    # Right: Team 2 selection
     with col3:
-        if not team2_players.empty:
-            label_options = team2_players['Slot'].tolist()
-            choice = st.selectbox(f"{team2} {pos}", label_options, key=f"{team2}_{pos}")
-            row = team2_players[team2_players['Slot'] == choice].iloc[0]
-            st.markdown(
-                f"""
-                <div class="card">
-                    <div style="background-color:{color}; padding:6px; border-radius:6px; font-weight:bold;">
-                        {row['Slot']}
-                    </div>
-                    <div style="margin-top:6px;">
-                        {row['Fantasy Points']} pts <br>
-                        <a href="{row['Roster URL']}" target="_blank">Roster</a>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            team2_total += row['Fantasy Points']
+        choice = st.selectbox(
+            f"Team 2 {pos}",
+            options=scoreboard[scoreboard['position'] == pos]['Slot'].tolist(),
+            key=f"team2_{pos}_{len(team2_lineup)}"
+        )
+        team2_lineup[pos] = choice
 
-# ----------------------------
-# Team totals
-# ----------------------------
+# ------------------------
+# Show scores + totals
+# ------------------------
+def calculate_score(lineup):
+    total = 0
+    details = []
+    for pos, player_slot in lineup.items():
+        row = scoreboard[scoreboard['Slot'] == player_slot].iloc[0]
+        points = row['Fantasy Points']
+        total += points
+        details.append(f"{player_slot}: {points} pts")
+    return total, details
+
+team1_score, team1_details = calculate_score(team1_lineup)
+team2_score, team2_details = calculate_score(team2_lineup)
+
 st.markdown("---")
+st.subheader("📊 Matchup Results")
+
 col1, col2 = st.columns(2)
 with col1:
-    st.markdown(f"<h2 style='text-align: center;'>{team1} Total: {team1_total:.1f} pts</h2>", unsafe_allow_html=True)
+    st.markdown("### Team 1")
+    for d in team1_details:
+        st.write(d)
+    st.markdown(f"**Total: {team1_score} pts**")
+
 with col2:
-    st.markdown(f"<h2 style='text-align: center;'>{team2} Total: {team2_total:.1f} pts</h2>", unsafe_allow_html=True)
+    st.markdown("### Team 2")
+    for d in team2_details:
+        st.write(d)
+    st.markdown(f"**Total: {team2_score} pts**")
